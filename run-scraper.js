@@ -26,7 +26,7 @@ const EmailService = require("./lib/email");
   // Check if any jobs have user emails before initializing email service
   const jobsWithEmails = jobs.filter((job) => job.user_email);
   let emailService = null;
-
+  
   if (jobsWithEmails.length > 0) {
     console.log(
       `📧 ${jobsWithEmails.length} job(s) have email notifications enabled`
@@ -41,10 +41,10 @@ const EmailService = require("./lib/email");
     const startTime = new Date(); // Capture start time
 
     console.log(`\n🚀 Processing job ${id.substring(0, 8)}...`);
-    console.log(`   Redfin: ${redfin_url}`);
-    console.log(`   Sheet: ${sheet_url}`);
+    console.log(`Redfin: ${redfin_url}`);
+    console.log(`Sheet: ${sheet_url}`);
     if (user_email) {
-      console.log(`   User: ${user_email}`);
+      console.log(`User: ${user_email}`);
     }
 
     try {
@@ -73,10 +73,10 @@ const EmailService = require("./lib/email");
           })
           .eq("id", id);
 
-        console.log(`   ✅ Job ${id.substring(0, 8)} completed successfully`);
-        console.log(`   Found ${result.count} listings`);
-        console.log(`   Started at: ${startTime.toLocaleTimeString()}`);
-        console.log(`   Next run: ${nextRunTime.toLocaleTimeString()}`);
+        console.log(`✅ Job ${id.substring(0, 8)} completed successfully`);
+        console.log(`Found ${result.count} listings`);
+        console.log(`Started at: ${startTime.toLocaleTimeString()}`);
+        console.log(`Next run: ${nextRunTime.toLocaleTimeString()}`);
 
         // Send email notification if new listings were found and user has email
         if (result.count > 0 && user_email && emailService) {
@@ -89,17 +89,13 @@ const EmailService = require("./lib/email");
             );
           } catch (emailError) {
             console.error(
-              `   ⚠️  Failed to send email notification: ${emailError.message}`
+              `⚠️  Failed to send email notification: ${emailError.message}`
             );
           }
         } else if (result.count === 0 && user_email) {
-          console.log(
-            `   ℹ️  No new listings found, skipping email notification`
-          );
+          console.log(`ℹ️  No new listings found, skipping email notification`);
         } else if (!user_email) {
-          console.log(
-            `   ℹ️  No user email found, skipping email notification`
-          );
+          console.log(`ℹ️  No user email found, skipping email notification`);
         }
       } else {
         throw new Error(result.message);
@@ -119,11 +115,13 @@ const EmailService = require("./lib/email");
           );
         } catch (emailError) {
           console.error(
-            `   ⚠️  Failed to send error notification: ${emailError.message}`
+            `⚠️  Failed to send error notification: ${emailError.message}`
           );
         }
       }
     }
+
+    console.log(""); // Empty line between jobs
   }
 
   console.log("\n🏁 Job processor completed");
