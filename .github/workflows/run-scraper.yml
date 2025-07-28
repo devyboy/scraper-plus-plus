@@ -1,17 +1,16 @@
-name: Run Node Scraper
+name: Manual Redfin Scraper
 
 on:
   schedule:
-    - cron: '0 * * * *'  # every 1 hour
-  workflow_dispatch:     # manual trigger too
+    # Run every 30 minutes starting at 00:00 UTC
+    - cron: '0,30 * * * *'
+  workflow_dispatch:
     inputs:
       redfin_url:
-        type: string
-        description: "Redfin URL"
+        description: 'Redfin Search URL'
         required: true
       sheet_url:
-        type: string
-        description: "Google Sheet URL"
+        description: 'Google Sheet URL'
         required: true
 
 jobs:
@@ -19,19 +18,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: '20'  # or whatever version you're using
+          node-version: '20'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run scraper
+        run: node run-scraper.js
         env:
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
-        run: node index.js "${{ github.event.inputs.redfin_url }}" "${{ github.event.inputs.sheet_url }}"

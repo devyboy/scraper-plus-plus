@@ -24,9 +24,14 @@ export default function Home() {
     e.preventDefault();
 
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("jobs").insert([
-      { redfin_url: redfinUrl, sheet_url: sheetUrl, user_id: userData.user?.id },
-    ]);
+
+    const insertData = {
+      redfin_url: redfinUrl,
+      sheet_url: sheetUrl,
+      user_id: userData.user?.id,
+    }
+
+    const { error } = await supabase.from("jobs").insert([insertData]);
     
     if (!error) {
       setSubmitted(true);
