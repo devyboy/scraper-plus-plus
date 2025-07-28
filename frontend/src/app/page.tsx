@@ -1,6 +1,6 @@
 "use client"
 import { useAuth } from "../../lib/auth-context";
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from "../../lib/supabase"
 
 interface Job {
@@ -99,11 +99,31 @@ export default function Home() {
   const [sneedChecked, setSneedChecked] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
 
+  const fetchJobs = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching jobs:', error)
+      } else {
+        setJobs(data || [])
+      }
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setLoadingJobs(false)
+    }
+  }, [user?.id])
+
   useEffect(() => {
     if (user) {
       fetchJobs()
     }
-  }, [user])
+  }, [user, fetchJobs])
 
   const copyToClipboard = async () => {
     try {
@@ -127,26 +147,6 @@ export default function Home() {
 
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id))
-  }
-
-  const fetchJobs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching jobs:', error)
-      } else {
-        setJobs(data || [])
-      }
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setLoadingJobs(false)
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
