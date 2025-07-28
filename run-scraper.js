@@ -24,6 +24,8 @@ const { supabase } = require("./lib/supabase");
 
   for (const job of jobs) {
     const { id, redfin_url, sheet_url } = job;
+    const startTime = new Date(); // Capture start time
+
     console.log(`\n🚀 Processing job ${id.substring(0, 8)}...`);
     console.log(`   Redfin: ${redfin_url}`);
     console.log(`   Sheet: ${sheet_url}`);
@@ -40,7 +42,9 @@ const { supabase } = require("./lib/supabase");
 
       if (result.success) {
         const timeNow = new Date();
-        const nextRunTime = new Date(timeNow.getTime() + 1000 * 60 * 30); // 30 minutes
+
+        // Next run is 30 minutes after the start time
+        const nextRunTime = new Date(startTime.getTime() + 1000 * 60 * 30);
 
         // Update job status to success
         await supabase
@@ -54,6 +58,7 @@ const { supabase } = require("./lib/supabase");
 
         console.log(`✅ Job ${id.substring(0, 8)} completed successfully`);
         console.log(`   Found ${result.count} listings`);
+        console.log(`   Started at: ${startTime.toLocaleTimeString()}`);
         console.log(`   Next run: ${nextRunTime.toLocaleTimeString()}`);
       } else {
         throw new Error(result.message);
