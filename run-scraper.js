@@ -5,9 +5,6 @@ const EmailService = require("./lib/email");
 (async () => {
   console.log("🔍 Starting job processor...");
 
-  // Initialize email service
-  const emailService = new EmailService();
-
   // Get all active jobs
   const { data: jobs, error } = await supabase
     .from("jobs")
@@ -25,6 +22,19 @@ const EmailService = require("./lib/email");
   }
 
   console.log(`Found ${jobs.length} active job(s) to process`);
+
+  // Check if any jobs have user emails before initializing email service
+  const jobsWithEmails = jobs.filter((job) => job.user_email);
+  let emailService = null;
+
+  if (jobsWithEmails.length > 0) {
+    console.log(
+      `📧 ${jobsWithEmails.length} job(s) have email notifications enabled`
+    );
+    emailService = new EmailService();
+  } else {
+    console.log("ℹ️  No jobs have email notifications enabled");
+  }
 
   for (const job of jobs) {
     const { id, redfin_url, sheet_url, user_email } = job;
@@ -69,7 +79,7 @@ const EmailService = require("./lib/email");
         console.log(`   Next run: ${nextRunTime.toLocaleTimeString()}`);
 
         // Send email notification if new listings were found and user has email
-        if (result.count > 0 && user_email) {
+        if (result.count > 0 && user_email && emailService) {
           try {
             await emailService.sendNewListingsNotification(
               user_email,
@@ -100,7 +110,7 @@ const EmailService = require("./lib/email");
       console.error(`❌ Job ${id.substring(0, 8)} failed: ${error.message}`);
 
       // Send error notification if user has email
-      if (user_email) {
+      if (user_email && emailService) {
         try {
           await emailService.sendErrorNotification(
             user_email,
