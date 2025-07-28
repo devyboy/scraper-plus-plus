@@ -20,15 +20,15 @@ const { supabase } = require("./lib/supabase");
     return;
   }
 
-  console.log(`📋 Found ${jobs.length} active job(s) to process`);
+  console.log(`Found ${jobs.length} active job(s) to process`);
 
   for (const job of jobs) {
     const { id, redfin_url, sheet_url } = job;
     const startTime = new Date(); // Capture start time
 
     console.log(`\n🚀 Processing job ${id.substring(0, 8)}...`);
-    console.log(`   Redfin: ${redfin_url}`);
-    console.log(`   Sheet: ${sheet_url}`);
+    console.log(`\tRedfin: ${redfin_url}`);
+    console.log(`\tSheet: ${sheet_url}`);
 
     try {
       // Update job status to running
