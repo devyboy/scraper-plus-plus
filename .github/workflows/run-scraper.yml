@@ -4,14 +4,7 @@ on:
   schedule:
     # Run every 30 minutes starting at 00:00 UTC
     - cron: '0,30 * * * *'
-  workflow_dispatch:
-    inputs:
-      redfin_url:
-        description: 'Redfin Search URL'
-        required: true
-      sheet_url:
-        description: 'Google Sheet URL'
-        required: true
+  workflow_dispatch: # Manual trigger for testing
 
 jobs:
   scrape:
