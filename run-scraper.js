@@ -5,11 +5,12 @@ const EmailService = require("./lib/email");
 (async () => {
   console.log("🔍 Starting job processor...");
 
-  // Get all active jobs
+  // Get all active jobs for authenticated users only
   const { data: jobs, error } = await supabase
     .from("jobs")
     .select("*")
-    .eq("active", true);
+    .eq("active", true)
+    .not("user_id", "is", null); // Only get jobs with authenticated users
 
   if (error) {
     console.error("❌ Failed to fetch jobs from database:", error.message);
@@ -26,7 +27,7 @@ const EmailService = require("./lib/email");
   // Check if any jobs have user emails before initializing email service
   const jobsWithEmails = jobs.filter((job) => job.user_email);
   let emailService = null;
-  
+
   if (jobsWithEmails.length > 0) {
     console.log(
       `📧 ${jobsWithEmails.length} job(s) have email notifications enabled`
@@ -48,12 +49,6 @@ const EmailService = require("./lib/email");
     }
 
     try {
-      // Update job status to running
-      await supabase
-        .from("jobs")
-        .update({ job_status: "running" })
-        .eq("id", id);
-
       // Run the scraper
       const result = await runScraper(redfin_url, sheet_url);
 
@@ -63,11 +58,10 @@ const EmailService = require("./lib/email");
         // Next run is 30 minutes after the start time
         const nextRunTime = new Date(startTime.getTime() + 1000 * 60 * 30);
 
-        // Update job status to success
+        // Update job with run times
         await supabase
           .from("jobs")
           .update({
-            job_status: "success",
             last_run: timeNow.toISOString(),
             next_run: nextRunTime.toISOString(),
           })
@@ -101,11 +95,8 @@ const EmailService = require("./lib/email");
         throw new Error(result.message);
       }
     } catch (error) {
-      // Update job status to failed
-      await supabase.from("jobs").update({ job_status: "failed" }).eq("id", id);
       console.error(`❌ Job ${id.substring(0, 8)} failed: ${error.message}`);
 
-      // Send error notification if user has email
       if (user_email && emailService) {
         try {
           await emailService.sendErrorNotification(
@@ -115,14 +106,13 @@ const EmailService = require("./lib/email");
           );
         } catch (emailError) {
           console.error(
-            `⚠️  Failed to send error notification: ${emailError.message}`
+            `⚠️  Failed to send error email notification: ${emailError.message}`
           );
         }
       }
     }
-
     console.log(""); // Empty line between jobs
   }
 
-  console.log("\n🏁 Job processor completed");
+  console.log("🏁 Job processor completed");
 })();
