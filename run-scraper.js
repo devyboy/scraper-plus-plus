@@ -27,8 +27,8 @@ const { supabase } = require("./lib/supabase");
     const startTime = new Date(); // Capture start time
 
     console.log(`\n🚀 Processing job ${id.substring(0, 8)}...`);
-    console.log(`\tRedfin: ${redfin_url}`);
-    console.log(`\tSheet: ${sheet_url}`);
+    console.log(`   Redfin: ${redfin_url}`);
+    console.log(`   Sheet: ${sheet_url}`);
 
     try {
       // Update job status to running
@@ -56,7 +56,7 @@ const { supabase } = require("./lib/supabase");
           })
           .eq("id", id);
 
-        console.log(`✅ Job ${id.substring(0, 8)} completed successfully`);
+        console.log(`   ✅ Job ${id.substring(0, 8)} completed successfully`);
         console.log(`   Found ${result.count} listings`);
         console.log(`   Started at: ${startTime.toLocaleTimeString()}`);
         console.log(`   Next run: ${nextRunTime.toLocaleTimeString()}`);
