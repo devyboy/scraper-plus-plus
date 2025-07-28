@@ -1,8 +1,12 @@
 const { runScraper } = require("./lib/scraper");
 const { supabase } = require("./lib/supabase");
+const EmailService = require("./lib/email");
 
 (async () => {
   console.log("🔍 Starting job processor...");
+
+  // Initialize email service
+  const emailService = new EmailService();
 
   // Get all active jobs
   const { data: jobs, error } = await supabase
@@ -23,12 +27,15 @@ const { supabase } = require("./lib/supabase");
   console.log(`Found ${jobs.length} active job(s) to process`);
 
   for (const job of jobs) {
-    const { id, redfin_url, sheet_url } = job;
+    const { id, redfin_url, sheet_url, user_email } = job;
     const startTime = new Date(); // Capture start time
 
     console.log(`\n🚀 Processing job ${id.substring(0, 8)}...`);
     console.log(`   Redfin: ${redfin_url}`);
     console.log(`   Sheet: ${sheet_url}`);
+    if (user_email) {
+      console.log(`   User: ${user_email}`);
+    }
 
     try {
       // Update job status to running
@@ -60,6 +67,30 @@ const { supabase } = require("./lib/supabase");
         console.log(`   Found ${result.count} listings`);
         console.log(`   Started at: ${startTime.toLocaleTimeString()}`);
         console.log(`   Next run: ${nextRunTime.toLocaleTimeString()}`);
+
+        // Send email notification if new listings were found and user has email
+        if (result.count > 0 && user_email) {
+          try {
+            await emailService.sendNewListingsNotification(
+              user_email,
+              { redfin_url, sheet_url },
+              result.count,
+              result.spreadsheetUrl
+            );
+          } catch (emailError) {
+            console.error(
+              `   ⚠️  Failed to send email notification: ${emailError.message}`
+            );
+          }
+        } else if (result.count === 0 && user_email) {
+          console.log(
+            `   ℹ️  No new listings found, skipping email notification`
+          );
+        } else if (!user_email) {
+          console.log(
+            `   ℹ️  No user email found, skipping email notification`
+          );
+        }
       } else {
         throw new Error(result.message);
       }
@@ -67,6 +98,21 @@ const { supabase } = require("./lib/supabase");
       // Update job status to failed
       await supabase.from("jobs").update({ job_status: "failed" }).eq("id", id);
       console.error(`❌ Job ${id.substring(0, 8)} failed: ${error.message}`);
+
+      // Send error notification if user has email
+      if (user_email) {
+        try {
+          await emailService.sendErrorNotification(
+            user_email,
+            { redfin_url, sheet_url },
+            error.message
+          );
+        } catch (emailError) {
+          console.error(
+            `   ⚠️  Failed to send error notification: ${emailError.message}`
+          );
+        }
+      }
     }
   }
 

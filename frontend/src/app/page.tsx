@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 export default function Home() {
   const [redfinUrl, setRedfinUrl] = useState("");
   const [sheetUrl, setSheetUrl] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function Home() {
       redfin_url: redfinUrl,
       sheet_url: sheetUrl,
       user_id: userData.user?.id,
+      user_email: userEmail, // Store email with the job
     }
 
     const { error } = await supabase.from("jobs").insert([insertData]);
@@ -58,12 +60,26 @@ export default function Home() {
             onChange={(e) => setSheetUrl(e.target.value)}
             required
           />
+          <input
+            type="email"
+            placeholder="Enter your email for notifications (optional)"
+            className="border p-2 rounded"
+            value={userEmail}
+            onChange={(e) => setUserEmail(e.target.value)}
+          />
           <button type="submit" className="bg-blue-500 text-white p-2 rounded">
             Start Tracker
           </button>
         </form>
       ) : (
-        <p className="text-green-600">✅ Tracker started! Check your sheet for updates.</p>
+        <div className="text-center">
+          <p className="text-green-600 mb-2">✅ Tracker started! Check your sheet for updates.</p>
+          {userEmail && (
+            <p className="text-blue-600 text-sm">
+              📧 You'll receive email notifications when new listings are found.
+            </p>
+          )}
+        </div>
       )}
     </main>
   );
