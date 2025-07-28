@@ -10,7 +10,7 @@ export default function AuthRedirects() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (loading) return; // Don't redirect while loading
+    if (loading) return;
 
     // Define public pages (auth pages)
     const publicPages = ['/auth/signin', '/auth/signup'];
@@ -18,11 +18,10 @@ export default function AuthRedirects() {
     const isPublicPage = publicPages.includes(pathname);
 
     if (user && isPublicPage) {
-      // Authorized user on public page -> redirect to home (which will show jobs interface)
       router.push('/');
     }
     // No other redirects needed - home page handles both authenticated and unauthenticated users
   }, [user, loading, router, pathname]);
 
-  return null; // This component doesn't render anything
+  return null;
 } 

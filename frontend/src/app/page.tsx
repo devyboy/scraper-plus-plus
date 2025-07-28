@@ -13,28 +13,78 @@ interface Job {
   next_run: string | null
 }
 
-// Helper function to format dates as 24-hour time
+interface Notification {
+  id: string
+  type: 'success' | 'error'
+  message: string
+}
+
+// Helper function to format dates in user's local timezone
 const formatTime = (dateString: string | null): string => {
   if (!dateString) return 'Never'
   
-  const date = new Date(dateString)
-  return date.toLocaleTimeString('en-US', { 
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  })
+  // Ensure the date string has timezone information
+  let date: Date
+  if (dateString.endsWith('Z')) {
+    // Already has UTC timezone
+    date = new Date(dateString)
+  } else {
+    // Assume it's UTC and add Z suffix
+    date = new Date(dateString + 'Z')
+  }
+  
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+  
+  if (isToday) {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+  } else {
+    return date.toLocaleString('en-US', { 
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+  }
 }
 
-// Helper function to format future dates as 24-hour time
+// Helper function to format future dates in user's local timezone
 const formatFutureTime = (dateString: string | null): string => {
   if (!dateString) return 'Not scheduled'
   
-  const date = new Date(dateString)
-  return date.toLocaleTimeString('en-US', { 
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  })
+  // Ensure the date string has timezone information
+  let date: Date
+  if (dateString.endsWith('Z')) {
+    // Already has UTC timezone
+    date = new Date(dateString)
+  } else {
+    // Assume it's UTC and add Z suffix
+    date = new Date(dateString + 'Z')
+  }
+  
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+  
+  if (isToday) {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+  } else {
+    return date.toLocaleString('en-US', { 
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+  }
 }
 
 export default function Home() {
@@ -47,6 +97,7 @@ export default function Home() {
   const [copied, setCopied] = useState(false)
   const [sharedChecked, setSharedChecked] = useState(false)
   const [sneedChecked, setSneedChecked] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
 
   useEffect(() => {
     if (user) {
@@ -63,6 +114,20 @@ export default function Home() {
       console.error('Failed to copy: ', err);
     }
   };
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    const id = Date.now().toString()
+    setNotifications(prev => [...prev, { id, type, message }])
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id))
+    }, 5000)
+  }
+
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
+  }
 
   const fetchJobs = async () => {
     try {
@@ -101,20 +166,20 @@ export default function Home() {
 
       if (error) {
         console.error("Error inserting job:", error)
-        alert("Error creating job. Please try again.")
+        showNotification('error', "Error creating job. Please try again.")
       } else {
         console.log("Job created successfully:", data)
         setRedfinUrl("")
         setSheetUrl("")
         setSharedChecked(false)
         setSneedChecked(false)
-        alert("Job created successfully! The scraper will start monitoring this listing.")
+        showNotification('success', "Job created successfully! The scraper will start monitoring this listing.")
         // Refresh the jobs list
         fetchJobs()
       }
     } catch (error) {
       console.error("Error:", error)
-      alert("Error creating job. Please try again.")
+      showNotification('error', "Error creating job. Please try again.")
     }
 
     setSubmitted(false)
@@ -163,6 +228,56 @@ export default function Home() {
   // Show jobs interface for authenticated users
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={`w-96 bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden transform transition-all duration-300 ease-in-out ${
+              notification.type === 'success' 
+                ? 'ring-green-500' 
+                : 'ring-red-500'
+            }`}
+          >
+            <div className="p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  {notification.type === 'success' ? (
+                    <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3 flex-1 min-w-0">
+                  <p className={`text-sm font-medium leading-relaxed ${
+                    notification.type === 'success' ? 'text-green-800' : 'text-red-800'
+                  }`}>
+                    {notification.message}
+                  </p>
+                </div>
+                <div className="ml-4 flex-shrink-0 flex">
+                  <button
+                    onClick={() => removeNotification(notification.id)}
+                    className={`bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      notification.type === 'success' ? 'focus:ring-green-500' : 'focus:ring-red-500'
+                    }`}
+                  >
+                    <span className="sr-only">Close</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -171,7 +286,7 @@ export default function Home() {
           </div>
           <button
             onClick={signOut}
-            className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+            className="text-sm text-gray-600 hover:text-gray-900 font-medium cursor-pointer"
           >
             Sign out
           </button>
