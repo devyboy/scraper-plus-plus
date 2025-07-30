@@ -1,9 +1,6 @@
 name: Manual Redfin Scraper
 
 on:
-  schedule:
-    # Run every 30 minutes starting at 00:00 UTC
-    - cron: '0,30 * * * *'
   workflow_dispatch: # Manual trigger for testing
 
 jobs:
